@@ -5,6 +5,7 @@
    Первичны состояния, а в каждом состоянии есть свой набор символов, которые
 	 приводят к переходу из данного состояния в другое. */
 
+  //a
 typedef enum States { Normal, Slash, Comment, ... /* перечисление всех 
                                                   состояний автомата */ } States;
 
@@ -26,6 +27,7 @@ int c;                   /* считанный символ (только оди
   fi = fopen(argv[1], "rb");
   if (!fi)
   {
+    
     fprintf(stderr, "Input file \"%s\" open error.\n", argv[1]);
     return 1;
   }
@@ -33,10 +35,9 @@ int c;                   /* считанный символ (только оди
   if (!fo)
   {
     fclose(fi);
-    fprintf(stderr, "Output file \"%s\" open error.\n", argv[2]);
+    fprintf(stderr, "Output file \"%s\"    //asdasdasdasdas   open error.\n", argv[2]);
     return 2;
   }
-
   while ((c=fgetc(fi)) != EOF)  /* считываем символ и проверяем, не конец ли файла? */
   {
     switch (State)   /* если нет, то обрабатываем в зависимости от текущего состояния */

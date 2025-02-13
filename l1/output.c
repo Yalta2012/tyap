@@ -2,6 +2,8 @@
 
  
 
+  
+
 typedef enum States { Normal, Slash, Comment, ...   } States;
 
 int main(int argc, char ** argv)
@@ -19,6 +21,7 @@ int c;
   fi = fopen(argv[1], "rb");
   if (!fi)
   {
+    
     fprintf(stderr, "Input file \"%s\" open error.\n", argv[1]);
     return 1;
   }
@@ -26,10 +29,9 @@ int c;
   if (!fo)
   {
     fclose(fi);
-    fprintf(stderr, "Output file \"%s\" open error.\n", argv[2]);
+    fprintf(stderr, "Output file \"%s\"    //asdasdasdasdas   open error.\n", argv[2]);
     return 2;
   }
-
   while ((c=fgetc(fi)) != EOF)   
   {
     switch (State)    

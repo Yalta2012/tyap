@@ -1,5 +1,5 @@
 CC = g++
-file.cpp = l0.cpp
+file.cpp = l1.2.cpp
 input = utf8.c
 output = output.c
 FlAGS = -g
