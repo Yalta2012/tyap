@@ -35,7 +35,7 @@ int c;
     switch (State)    
     {
       case Normal:
-        if (c == '/)        
+        if (c == '/')        
           State = Slash;     
         else if (c == ...)   
           State = ...;       
@@ -69,3 +69,4 @@ int c;
 
  
 
+/* ((незаконченный комментарий)) ...

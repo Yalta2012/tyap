@@ -1,7 +1,7 @@
 CC = g++
 file.cpp = l0.cpp
 input = utf8.c
-output = output.txt
+output = output.c
 FlAGS = -g
 
 all:

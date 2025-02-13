@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <string>
 using namespace std;
 
 enum StateEnum
@@ -11,10 +12,15 @@ enum StateEnum
 
 };
 
-enum StateEnum NewState(enum StateEnum old_state, char signal, ofstream &outS, char *comment_flag)
+enum SignalEnum
+{
+	EOF_SIGNAL = 256,
+
+};
+
+enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstream &outS, string *buffer_string)
 {
 	enum StateEnum new_state = old_state;
-	*comment_flag = 0;
 
 	if (old_state == NORMAL_STATE)
 	{
@@ -23,7 +29,7 @@ enum StateEnum NewState(enum StateEnum old_state, char signal, ofstream &outS, c
 		else
 		{
 			new_state = NORMAL_STATE;
-			outS << signal;
+			outS << (char)signal;
 		}
 	}
 
@@ -32,29 +38,52 @@ enum StateEnum NewState(enum StateEnum old_state, char signal, ofstream &outS, c
 		if (signal == '*')
 		{
 			new_state = MULTI_LINE_COMM;
-			*comment_flag = 1;
+			*buffer_string += '/';
+			*buffer_string += (char)signal;
 		}
 		else
 		{
 			new_state = NORMAL_STATE;
-			outS << "/";
+			outS << char('/');
+			outS << (char)signal;
 		}
 	}
 
 	else if (old_state == MULTI_LINE_COMM)
 	{
 		if (signal == '*')
+		{
+			*buffer_string += (char)signal;
 			new_state = MULTI_LINE_COMM_STAR;
+		}
+		else if (signal == EOF_SIGNAL)
+		{
+			outS << *buffer_string;
+		}
 		else
+		{
+			*buffer_string += (char)signal;
 			new_state = MULTI_LINE_COMM;
+		}
 	}
 
 	else if (old_state == MULTI_LINE_COMM_STAR)
 	{
 		if (signal == '*')
+		{
 			new_state = MULTI_LINE_COMM_STAR;
+			*buffer_string += '*';
+		}
 		else if (signal == '/')
+		{
 			new_state = NORMAL_STATE;
+			outS << " ";
+			buffer_string->clear();
+		}
+		else if (signal == EOF_SIGNAL)
+		{
+			outS << *buffer_string;
+		}
 		else
 			new_state = MULTI_LINE_COMM;
 	}
@@ -69,29 +98,18 @@ enum StateEnum NewState(enum StateEnum old_state, char signal, ofstream &outS, c
 
 void Lex(ifstream &inS, ofstream &outS)
 {
-	char comment_flag = 0;
-	size_t last_comment_start = 0;
+
+	string buffer_string = "";
 	char buffer_char = '\0';
 	inS >> noskipws;
 
 	StateEnum state = NORMAL_STATE;
-	StateEnum prev_state = NORMAL_STATE;
+	SignalEnum signal = (SignalEnum)0;
 	while (inS >> buffer_char)
 	{
-		state = NewState(state, buffer_char, outS, &comment_flag);
-		if (comment_flag) last_comment_start = size_t(inS.tellg()) - 2;
+		state = NewState(state, (SignalEnum)buffer_char, outS, &buffer_string);
 	}
-
-	if (state == MULTI_LINE_COMM || state == MULTI_LINE_COMM_STAR)
-	{
-		inS.clear();
-		inS.seekg(last_comment_start, ios::beg);
-
-		while (inS >> buffer_char)
-		{
-			outS << buffer_char;
-		}
-	}
+	state = NewState(state, EOF_SIGNAL, outS, &buffer_string);
 }
 
 int main(int argc, char *argw[])
