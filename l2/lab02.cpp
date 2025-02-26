@@ -5,10 +5,29 @@ using namespace std;
 
 enum StateEnum
 {
-	NORMAL_STATE,
-	NORMAL_SLASH,
-	MULTI_LINE_COMM,
-	MULTI_LINE_COMM_STAR
+	NORMAL_ST,
+	NORMAL_SLASH_ST,
+
+	MULTI_LINE_COMM_ST,
+	MULTI_LINE_COMM_STAR_ST,
+
+	ONE_LINE_COMM_ST,
+
+	STRING_ST,
+	STRING_BSLASH_ST,
+
+	CSTRING_ST,
+	CSTRING_BSLASH_ST,
+
+	NUM0_ST,
+	NUM2_ST,
+	NUM2_START_ST,
+	NUM8_ST,
+	NUM10_ST,
+	NUM16_ST,
+	NUM16_START_ST,
+
+	
 
 };
 
@@ -21,82 +40,138 @@ enum SignalEnum
 enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstream &outS, string *buffer_string)
 {
 	enum StateEnum new_state = old_state;
-
-	if (old_state == NORMAL_STATE)
+	switch (old_state)
 	{
+	case NORMAL_ST:
 		if (signal == '/')
-			new_state = NORMAL_SLASH;
+			new_state = NORMAL_SLASH_ST;
+		else if (signal == '\"')
+		{
+			new_state = STRING_ST;
+
+		}
+		else if (signal == '\'')
+		{
+			new_state = CSTRING_ST;
+
+		}
 		else
 		{
-			new_state = NORMAL_STATE;
-			outS << (char)signal;
-		}
-	}
+			new_state = NORMAL_ST;
 
-	else if (old_state == NORMAL_SLASH)
-	{
+		}
+		break;
+
+
+	case NORMAL_SLASH_ST:
 		if (signal == '*')
 		{
-			new_state = MULTI_LINE_COMM;
+			new_state = MULTI_LINE_COMM_ST;
 			*buffer_string += '/';
 			*buffer_string += (char)signal;
 		}
-		if(signal == '/'){
-			new_state = NORMAL_SLASH;
-			outS<<char('/');
-		}
+		else if (signal == '/')
+			new_state = ONE_LINE_COMM_ST;
+		else if (signal == '\"')
+			new_state = STRING_ST;
+		else if (signal == '\'')
+			new_state = CSTRING_ST;
+
 		else
 		{
-			new_state = NORMAL_STATE;
-			outS << char('/');
-			outS << (char)signal;
-		}
-	}
+			new_state = NORMAL_ST;
 
-	else if (old_state == MULTI_LINE_COMM)
-	{
+
+		}
+		break;
+
+
+	case ONE_LINE_COMM_ST:
+		if (signal == '\n' || signal == '\r')
+		{
+
+			new_state = NORMAL_ST;
+		}
+		break;
+
+
+	case MULTI_LINE_COMM_ST:
 		if (signal == '*')
 		{
 			*buffer_string += (char)signal;
-			new_state = MULTI_LINE_COMM_STAR;
+			new_state = MULTI_LINE_COMM_STAR_ST;
 		}
 		else if (signal == EOF_SIGNAL)
 		{
-			outS << *buffer_string;
+
 		}
 		else
 		{
 			*buffer_string += (char)signal;
-			new_state = MULTI_LINE_COMM;
+			new_state = MULTI_LINE_COMM_ST;
 		}
-	}
+		break;
 
-	else if (old_state == MULTI_LINE_COMM_STAR)
-	{
+
+	case MULTI_LINE_COMM_STAR_ST:
 		if (signal == '*')
 		{
-			new_state = MULTI_LINE_COMM_STAR;
+			new_state = MULTI_LINE_COMM_STAR_ST;
 			*buffer_string += '*';
 		}
 		else if (signal == '/')
 		{
-			new_state = NORMAL_STATE;
-			outS << " ";
+			new_state = NORMAL_ST;
+
 			buffer_string->clear();
 		}
 		else if (signal == EOF_SIGNAL)
 		{
-			outS << *buffer_string;
+
 		}
 		else
-			new_state = MULTI_LINE_COMM;
-	}
+			new_state = MULTI_LINE_COMM_ST;
+		break;
 
-	else
-	{
-		new_state = old_state;
-	}
 
+	case STRING_ST:
+
+
+		if (signal == '\\')
+			new_state = STRING_BSLASH_ST;
+		else if (signal == '\"')
+			new_state = NORMAL_ST;
+		else
+			new_state = STRING_ST;
+		break;
+
+
+	case CSTRING_ST:
+
+		if (signal == '\\')
+			new_state = CSTRING_BSLASH_ST;
+		else if ('\"')
+			new_state = NORMAL_ST;
+		else
+			new_state = CSTRING_ST;
+		break;
+
+
+	case STRING_BSLASH_ST:
+
+		new_state = STRING_ST;
+		break;
+
+
+	case CSTRING_BSLASH_ST:
+
+		new_state = CSTRING_ST;
+		break;
+
+		
+	default:
+		break;
+	}
 	return new_state;
 }
 
@@ -107,7 +182,7 @@ void Lex(ifstream &inS, ofstream &outS)
 	char buffer_char = '\0';
 	inS >> noskipws;
 
-	StateEnum state = NORMAL_STATE;
+	StateEnum state = NORMAL_ST;
 	SignalEnum signal = (SignalEnum)0;
 	while (inS >> buffer_char)
 	{

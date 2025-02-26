@@ -102,7 +102,6 @@ enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstre
 		}
 		break;
 
-
 	case MULTI_LINE_COMM_STAR_ST:
 		if (signal == '*')
 		{
