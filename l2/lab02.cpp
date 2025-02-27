@@ -6,6 +6,7 @@ using namespace std;
 enum StateEnum
 {
 	NORMAL_ST,
+	TEXT_ST,
 	NORMAL_SLASH_ST,
 
 	MULTI_LINE_COMM_ST,
@@ -27,7 +28,12 @@ enum StateEnum
 	NUM16_ST,
 	NUM16_START_ST,
 
-	
+	U_ST,
+	L_ST,
+	LL_ST,
+	UL_ST,
+	LU_ST,
+	ULL_ST,
 
 };
 
@@ -37,7 +43,114 @@ enum SignalEnum
 
 };
 
-enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstream &outS, string *buffer_string)
+bool IsTextSymbol(const char c)
+{
+	if ((c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		(c == '.') ||
+		(c == '_'))
+		return true;
+	else
+		return false;
+}
+
+bool IsIntSuffix(const char c)
+{
+	if (c == 'u' ||
+		c == 'U' ||
+		c == 'l' ||
+		c == 'L')
+		return true;
+	else
+		return false;
+}
+
+bool Is10Digit(const char c)
+{
+	if (c >= '0' && c <= '9')
+		return true;
+	else
+		return false;
+}
+
+bool Is2Digit(const char c)
+{
+	if (c >= '0' && c <= '1')
+		return true;
+	else
+		return false;
+}
+
+bool Is8Digit(const char c)
+{
+	if (c >= '0' && c <= '7')
+		return true;
+	else
+		return false;
+}
+
+bool Is16Digit(const char c)
+{
+	if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))
+		return true;
+	else
+		return false;
+}
+
+enum StateEnum IntEndState(enum SignalEnum signal, ofstream &outS) // for /, ', ", u,l,U,L. THERE IS NOT LETTERS AND DIGITS
+{
+	StateEnum new_state = NORMAL_ST;
+
+	if (signal == '/')
+	{
+		outS << " int\n";
+		new_state = NORMAL_SLASH_ST;
+	}
+	else if (signal == '\'')
+	{
+		outS << " int\n";
+		new_state = CSTRING_ST;
+	}
+	else if (signal == '\"')
+	{
+		outS << " int\n";
+		new_state = STRING_ST;
+	}
+	else if (signal == 'u' || signal == 'U')
+	{
+		outS << (char)signal;
+		new_state = U_ST;
+	}
+	else if (signal == 'l' || signal == 'L')
+	{
+		outS << (char)signal;
+		new_state = L_ST;
+	}
+	else
+	{
+		new_state = NORMAL_ST;
+		outS << " int\n";
+	}
+	return new_state;
+}
+enum StateEnum IntStartAndSuffixEndState(enum SignalEnum signal)
+{
+	StateEnum new_state = NORMAL_ST;
+	if (signal == '/')
+	{
+		new_state = NORMAL_SLASH_ST;
+	}
+	else if (signal == '\'')
+	{
+		new_state = CSTRING_ST;
+	}
+	else if (signal == '\"')
+	{
+		new_state = STRING_ST;
+	}
+	return new_state;
+}
+enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstream &outS)
 {
 	enum StateEnum new_state = old_state;
 	switch (old_state)
@@ -46,97 +159,75 @@ enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstre
 		if (signal == '/')
 			new_state = NORMAL_SLASH_ST;
 		else if (signal == '\"')
-		{
 			new_state = STRING_ST;
-
-		}
 		else if (signal == '\'')
-		{
 			new_state = CSTRING_ST;
-
+		else if (IsTextSymbol(signal))
+			new_state = TEXT_ST;
+		else if (signal == '0')
+		{
+			new_state = NUM0_ST;
+			outS << (char)signal;
+		}
+		else if (Is10Digit(signal) && signal != '0') //[1-9]
+		{
+			new_state = NUM10_ST;
+			outS << (char)signal;
 		}
 		else
-		{
 			new_state = NORMAL_ST;
-
-		}
 		break;
 
+	case TEXT_ST:
+		if (signal == '/')
+			new_state = NORMAL_SLASH_ST;
+		else if (signal == '\"')
+			new_state = STRING_ST;
+		else if (signal == '\'')
+			new_state = CSTRING_ST;
+		else if (IsTextSymbol(signal) || Is10Digit(signal))
+			new_state = TEXT_ST;
+		else
+			new_state = NORMAL_ST;
+		break;
 
 	case NORMAL_SLASH_ST:
 		if (signal == '*')
-		{
 			new_state = MULTI_LINE_COMM_ST;
-			*buffer_string += '/';
-			*buffer_string += (char)signal;
-		}
 		else if (signal == '/')
 			new_state = ONE_LINE_COMM_ST;
 		else if (signal == '\"')
 			new_state = STRING_ST;
 		else if (signal == '\'')
 			new_state = CSTRING_ST;
-
+		else if (IsTextSymbol(signal))
+			new_state = TEXT_ST;
 		else
-		{
 			new_state = NORMAL_ST;
-
-
-		}
 		break;
-
 
 	case ONE_LINE_COMM_ST:
 		if (signal == '\n' || signal == '\r')
-		{
-
 			new_state = NORMAL_ST;
-		}
 		break;
-
 
 	case MULTI_LINE_COMM_ST:
 		if (signal == '*')
-		{
-			*buffer_string += (char)signal;
 			new_state = MULTI_LINE_COMM_STAR_ST;
-		}
-		else if (signal == EOF_SIGNAL)
-		{
-
-		}
 		else
-		{
-			*buffer_string += (char)signal;
 			new_state = MULTI_LINE_COMM_ST;
-		}
 		break;
-
 
 	case MULTI_LINE_COMM_STAR_ST:
 		if (signal == '*')
-		{
 			new_state = MULTI_LINE_COMM_STAR_ST;
-			*buffer_string += '*';
-		}
 		else if (signal == '/')
-		{
 			new_state = NORMAL_ST;
-
-			buffer_string->clear();
-		}
-		else if (signal == EOF_SIGNAL)
-		{
-
-		}
 		else
 			new_state = MULTI_LINE_COMM_ST;
 		break;
 
-
 	case STRING_ST:
-
-
 		if (signal == '\\')
 			new_state = STRING_BSLASH_ST;
 		else if (signal == '\"')
@@ -144,7 +235,6 @@ enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstre
 		else
 			new_state = STRING_ST;
 		break;
-
 
 	case CSTRING_ST:
 
@@ -156,19 +246,275 @@ enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstre
 			new_state = CSTRING_ST;
 		break;
 
-
 	case STRING_BSLASH_ST:
-
 		new_state = STRING_ST;
 		break;
 
-
 	case CSTRING_BSLASH_ST:
-
 		new_state = CSTRING_ST;
 		break;
 
-		
+	case NUM0_ST:
+		if (signal == 'b')
+		{
+			new_state = NUM2_START_ST;
+			outS << (char)signal;
+		}
+		else if (signal == 'x')
+		{
+			new_state = NUM16_START_ST;
+			outS << (char)signal;
+		}
+		else if (Is8Digit(signal))
+		{
+			new_state = NUM8_ST;
+			outS << (char)signal;
+		}
+		else if (IsTextSymbol(signal) && !IsIntSuffix(signal))
+		{
+			new_state = TEXT_ST;
+			outS << (char)signal;
+			outS << " ERROR";
+		}
+		else
+			new_state = IntEndState(signal, outS);
+		break;
+
+	case NUM10_ST:
+		if (Is10Digit(signal))
+		{
+			new_state = NUM10_ST;
+			outS << (char)signal;
+		}
+		else if (IsTextSymbol(signal)&& !IsIntSuffix(signal))
+		{
+			new_state = TEXT_ST;
+			outS << (char)signal;
+			outS << " ERROR\n";
+		}
+		else{
+			new_state = IntEndState(signal, outS);
+		}
+		break;
+
+	case NUM8_ST:
+		if (Is8Digit(signal))
+		{
+			new_state = NUM8_ST;
+			outS << (char)signal;
+		}
+		else if (IsTextSymbol(signal) && !IsIntSuffix(signal))
+		{
+			new_state = TEXT_ST;
+			outS << (char)signal;
+			outS << " ERROR\n";
+		}
+		else
+			new_state = IntEndState(signal, outS);
+		break;
+
+	case NUM2_START_ST:
+
+		if (Is2Digit(signal))
+		{
+			new_state = NUM2_ST;
+			outS << (char)signal;
+		}
+		else if (Is10Digit(signal) || IsTextSymbol(signal))
+		{
+			new_state = TEXT_ST;
+			outS << (char)signal;
+			outS << " ERROR\n";
+		}
+		else if (signal == '/' || signal == '\'' || signal == '\"')
+		{
+			new_state = IntEndState(signal, outS);
+		}
+		else if (signal == EOF_SIGNAL)
+		{
+			new_state = NORMAL_ST;
+			outS << " ERROR\n";
+		}
+		else
+		{
+			new_state = NORMAL_ST;
+			outS << (char)signal;
+			outS << " ERROR\n";
+		}
+		break;
+
+	case NUM2_ST:
+		if (Is2Digit(signal))
+		{
+			new_state = NUM2_ST;
+			outS << (char)signal;
+		}
+		else if (Is10Digit(signal) || (IsTextSymbol(signal) && !IsIntSuffix(signal)))
+		{
+			new_state = TEXT_ST;
+			outS << (char)signal;
+			outS << " ERROR\n";
+		}
+		else
+			new_state = IntEndState(signal, outS);
+
+		break;
+
+	case NUM16_START_ST:
+		if (Is16Digit(signal))
+		{
+			new_state = NUM16_ST;
+			outS << (char)signal;
+		}
+		else if (IsTextSymbol(signal))
+		{
+			new_state = TEXT_ST;
+			outS << (char)signal;
+			outS << " ERROR\n";
+		}
+		else if (signal == '/' || signal == '\'' || signal == '\"')
+		{
+			new_state = IntEndState(signal, outS);
+		}
+		else if (signal == EOF_SIGNAL)
+		{
+			new_state = NORMAL_ST;
+			outS << " ERROR\n";
+		}
+		else
+		{
+			new_state = NORMAL_ST;
+			outS << (char)signal;
+			outS << " ERROR\n";
+		}
+		break;
+
+	case NUM16_ST:
+		if (Is16Digit(signal))
+		{
+			new_state = NUM16_ST;
+			outS << (char)signal;
+		}
+		else if (IsTextSymbol(signal) && !IsIntSuffix(signal))
+		{
+			new_state = TEXT_ST;
+			outS << (char)signal;
+			outS << " ERROR\n";
+		}
+		else
+			new_state = IntEndState(signal, outS);
+		break;
+
+	case U_ST:
+		if (signal == 'L' || signal == 'l')
+		{
+			outS << (char) signal;
+			new_state = UL_ST;
+		}
+		else if (IsTextSymbol(signal) || Is10Digit(signal))
+		{
+			outS << (char) signal;
+			outS << " ERROR\n";
+			new_state = TEXT_ST;
+		}
+		else
+		{
+			new_state = IntStartAndSuffixEndState(signal);
+			outS << " unsigned\n";
+		}
+		break;
+
+	case L_ST:
+		if (signal == 'U' || signal == 'u')
+		{
+			outS << (char) signal;
+			new_state = LU_ST;
+		}
+		else if (signal == 'L' || signal == 'l')
+		{
+			outS << (char) signal;
+			new_state = LL_ST;
+		}
+		else if (IsTextSymbol(signal) || Is10Digit(signal))
+		{
+			outS << (char) signal;
+			outS << " ERROR\n";
+			new_state = TEXT_ST;
+		}
+		else
+		{
+			new_state = IntStartAndSuffixEndState(signal);
+			outS << " long\n";
+		}
+		break;
+
+	case LL_ST:
+		if (signal == 'U' || signal == 'u')
+		{
+			outS << (char) signal;
+			new_state = ULL_ST;
+		}
+
+		else if (IsTextSymbol(signal) || Is10Digit(signal))
+		{
+			outS << (char) signal;
+			outS << " ERROR\n";
+			new_state = TEXT_ST;
+		}
+		else
+		{
+			new_state = IntStartAndSuffixEndState(signal);
+			printf("%d %d", new_state, NORMAL_ST);
+			outS << " long\n";
+		}
+		break;
+
+	case UL_ST:
+		if (signal == 'L' || signal == 'l')
+		{
+			outS << (char) signal;
+			new_state = ULL_ST;
+		}
+		else if (IsTextSymbol(signal) || Is10Digit(signal))
+		{
+			outS << (char) signal;
+			outS << " ERROR\n";
+			new_state = TEXT_ST;
+		}
+		else
+		{
+			new_state = IntStartAndSuffixEndState(signal);
+			outS << " unsigned long\n";
+		}
+		break;
+
+	case LU_ST:
+		if (IsTextSymbol(signal) || Is10Digit(signal))
+		{
+			outS << (char) signal;
+			outS << " ERROR\n";
+			new_state = TEXT_ST;
+		}
+		else
+		{
+			new_state = IntStartAndSuffixEndState(signal);
+			outS << " unsigned long\n";
+		}
+		break;
+
+	case ULL_ST:
+		if (IsTextSymbol(signal) || Is10Digit(signal))
+		{
+			outS << (char) signal;
+			outS << " ERROR\n";
+			new_state = TEXT_ST;
+		}
+		else
+		{
+			new_state = IntStartAndSuffixEndState(signal);
+			outS << " unsigned long long\n";
+		}
+		break;
 	default:
 		break;
 	}
@@ -186,9 +532,9 @@ void Lex(ifstream &inS, ofstream &outS)
 	SignalEnum signal = (SignalEnum)0;
 	while (inS >> buffer_char)
 	{
-		state = NewState(state, (SignalEnum)buffer_char, outS, &buffer_string);
+		state = NewState(state, (SignalEnum)buffer_char, outS);
 	}
-	state = NewState(state, EOF_SIGNAL, outS, &buffer_string);
+	state = NewState(state, EOF_SIGNAL, outS);
 }
 
 int main(int argc, char *argw[])
