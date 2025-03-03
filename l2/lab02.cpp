@@ -260,7 +260,7 @@ enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstre
 			new_state = NUM2_START_ST;
 			outS << (char)signal;
 		}
-		else if (signal == 'x')
+		else if (signal == 'x' || signal == 'X')
 		{
 			new_state = NUM16_START_ST;
 			outS << (char)signal;
