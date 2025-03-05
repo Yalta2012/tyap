@@ -202,6 +202,16 @@ enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstre
 			new_state = CSTRING_ST;
 		else if (IsTextSymbol(signal))
 			new_state = TEXT_ST;
+		else if (signal == '0')
+		{
+			new_state = NUM0_ST;
+			outS << (char)signal;
+		}
+		else if (Is10Digit(signal) && signal != '0') //[1-9]
+		{
+			new_state = NUM10_ST;
+			outS << (char)signal;
+		}
 		else
 			new_state = NORMAL_ST;
 		break;
