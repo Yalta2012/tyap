@@ -339,6 +339,8 @@ enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstre
 		else if (signal == '/' || signal == '\'' || signal == '\"')
 		{
 			new_state = IntEndState(signal, outS);
+			outS << (char)signal;
+			outS << " ERROR\n";
 		}
 		else if (signal == EOF_SIGNAL)
 		{
@@ -385,6 +387,8 @@ enum StateEnum NewState(enum StateEnum old_state, enum SignalEnum signal, ofstre
 		else if (signal == '/' || signal == '\'' || signal == '\"')
 		{
 			new_state = IntEndState(signal, outS);
+			outS << (char)signal;
+			outS << " ERROR\n";
 		}
 		else if (signal == EOF_SIGNAL)
 		{
