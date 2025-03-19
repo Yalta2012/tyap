@@ -1,4 +1,4 @@
-CC = g++-13
+CC = g++
 file.cpp = lab03.cpp
 input = lab03in.txt
 output = output.txt

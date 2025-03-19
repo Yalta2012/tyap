@@ -1,5 +1,3 @@
 Start parsing
-Operator 1:	a = 1111
-End parsing.
-1 variable defined.
-a = 1111
+Expected ')' in line: 1, pos: 7 in char: "[end file]" (signal code:256)
+Abort parsing.

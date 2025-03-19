@@ -5,6 +5,8 @@
 		"fstream": "cpp",
 		"iostream": "cpp",
 		"format": "cpp",
-		"ostream": "cpp"
+		"ostream": "cpp",
+		"vector": "cpp",
+		"unordered_map": "cpp"
 	}
 }

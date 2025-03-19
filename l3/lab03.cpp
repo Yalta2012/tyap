@@ -31,15 +31,10 @@ public:
 
 	ifstream inS;
 	ofstream ofS;
-	Parser(string input_path);
+
+	// Parser(string input_path);
 	Parser(string input_path, string output_pat);
 	~Parser();
-	// Parser(ifstream &inS, ofstream &ofS)
-	// {
-	// 	cur_line = 1;
-	// 	cur_pos = 0;
-	// 	this->inS = inS;
-	// }
 
 	static bool IsLetter(char c);
 	static bool IsOp(char c);
@@ -139,9 +134,9 @@ void Parser::Get()
 		}
 		else
 		{
+
+			SetError("The symbol is not included in the alphabet");
 			error_c = (enum Signal)bc;
-			error_message = "The symbol is not included in the alphabet";
-			cur_c = ERROR_SIGNAL;
 		}
 	}
 	else
@@ -168,9 +163,12 @@ void Parser::ErrorOutput(string error_message)
 }
 void Parser::SetError(string error_message)
 {
+	if(cur_c != ERROR_SIGNAL){
+
 	error_c = cur_c;
 	cur_c = ERROR_SIGNAL;
 	this->error_message = error_message;
+	}
 }
 
 int Parser::SkipWS()
@@ -190,7 +188,7 @@ castom_type Parser::ProcC()
 
 	castom_type val = 0;
 	if (cur_c != '#')
-		SetError("Expected '#'");
+			SetError("Expected '#'");
 	else
 		Get();
 
@@ -215,7 +213,7 @@ castom_type Parser::ProcC()
 		}
 	}
 
-	if (cur_c != ERROR_SIGNAL && cur_c != EOF_SIGNAL && !IsDelim(cur_c))
+	if (cur_c != EOF_SIGNAL && !IsDelim(cur_c))
 		SetError("Unexpected symbol");
 
 	return val;
@@ -240,7 +238,7 @@ string Parser::ProcI()
 		res += (char)cur_c;
 		Get();
 	}
-	if (cur_c != ERROR_SIGNAL && cur_c != EOF_SIGNAL && !IsDelim(cur_c))
+	if ( cur_c != EOF_SIGNAL && !IsDelim(cur_c))
 		SetError("Unexpected symbol");
 	return res;
 }
@@ -255,7 +253,7 @@ castom_type Parser::ProcT()
 
 	const char action = (char)cur_c;
 	castom_type result = (action == '*' ? 1 : 0);
-
+	char empty_flag = 1;
 	Get();
 	SkipWS();
 	if (cur_c != '(')
@@ -269,8 +267,10 @@ castom_type Parser::ProcT()
 		SkipWS();
 	}
 	
-	while (cur_c != ERROR_SIGNAL && cur_c != ')')
-	{
+	while (cur_c != ERROR_SIGNAL && cur_c != EOF_SIGNAL && cur_c!= ')')
+	{	
+		
+		int prepos = cur_pos;
 		if (action == '*')
 		{
 			result *= ProcE();
@@ -279,27 +279,57 @@ castom_type Parser::ProcT()
 			result += ProcE();
 		}
 
+		if (cur_pos == prepos) empty_flag = 1;
+		else empty_flag = 0;
+
 		SkipWS();
 		if (cur_c != ',' && cur_c != ')')
-			SetError("Expected ',' or ')'");
+		{
+			if(empty_flag == 0)
+				SetError("Expected ',' or ')'");
+			
+			else
+				SetError("Expected statement");
+		}
 		else if (cur_c == ',')
 		{
+
+			if(empty_flag==1){
+				SetError("Expected statement");
+			}
+			else{
+
+				Get();
+				SkipWS();
+				if (cur_c !='#' && !IsLetter(cur_c) && !IsOp(cur_c)) {
+					SetError("Expected statement");
+			}
+		}
+
+		}
+		
+
+	}
+	if(cur_c == ')'){
+		if(empty_flag == 1){
+					SetError("Empty brakets");
+		}
+		else{
+
 			Get();
 			SkipWS();
 		}
 	}
 
-	if(cur_c == ')'){
-		Get();
-		SkipWS();
-	}
+	else 
+		SetError("Expected ')'");
+	
 	return result;
 }
 
 castom_type Parser::ProcE()
 {
 	castom_type result = 0;
-
 	if (cur_c == '-')
 	{
 		Get();
@@ -313,8 +343,7 @@ castom_type Parser::ProcE()
 
 	else if (cur_c == '(')
 	{
-		Get();
-		SkipWS();
+
 		result = ProcS();
 	}
 	else if (IsLetter(cur_c))
@@ -335,7 +364,9 @@ castom_type Parser::ProcE()
 	{
 		result = ProcC();
 	}
-	// cout<< "E"<<result<<endl;
+	else{
+		SetError("Unexpecetd symbol");
+	}
 
 	return result;
 }
@@ -376,6 +407,13 @@ castom_type Parser::ProcS()
 	{
 		val = ProcE();
 	}
+	if (cur_c!= ')'){
+	
+		SetError("Expected ')'");
+	
+	}
+	else{
+		Get();}
 	if (cur_c != ERROR_SIGNAL)
 	{
 		if (!symtable.contains(var))
@@ -397,11 +435,17 @@ void Parser::Parse()
 	while (cur_c != EOF_SIGNAL && cur_c != ERROR_SIGNAL)
 	{
 		if (cur_c != EOF_SIGNAL)
-			if (cur_c == '(')
+			if (cur_c == '('){
 				ProcS();
+
+			}
+			else{
+			SetError("Unexpected symbol");
+		}
+
 		if (cur_c != EOF_SIGNAL)
 		{
-			Get();
+			
 			SkipWS();
 		}
 	}
