@@ -65,7 +65,7 @@ Parser::Parser(string input_path, string output_pat)
 {
 	cur_c = (enum Signal)0;
 	cur_line = 1;
-	cur_pos = 1;
+	cur_pos = 0;
 	error_c = OK_SIGNAL;
 	error_message = "OK";
 	operators_counter = 0;
@@ -126,7 +126,7 @@ void Parser::Get()
 			if ((char)cur_c == '\n')
 			{
 				cur_line++;
-				cur_pos = 1;
+				cur_pos = 0;
 			}
 			else
 
