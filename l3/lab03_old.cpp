@@ -126,9 +126,6 @@ void Parse(ifstream & inS, ofstream & outS){
 
 	Get(inS);
 	while (glob_c != EOF_SIGNAL && glob_c != ERROR_SIGNAL){
-		// ProcS();
-			// cout<<(char)glob_c;
-			// Get(inS);
 
 			cout<<ProcC(inS)<<endl;
 			SkipWS(inS);

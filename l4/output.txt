@@ -1,0 +1,5 @@
+Start parsing
+Operator 1:	a = 10111
+End parsing.
+1 variable defined.
+a = 10111
