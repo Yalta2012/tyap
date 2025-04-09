@@ -1,5 +1,14 @@
-Start parsing
-Operator 1:	a = 10111
-End parsing.
-1 variable defined.
-a = 10111
+Start translation
+(1)
+1:	V(b, @)
+2:	C(0, @)
+3:	V(a, @)
+4:	C(3, @)
+5:	=(^3, ^4)
+6:	+(^2, ^5)
+7:	V(c, @)
+8:	V(a, @)
+9:	=(^7, ^8)
+10:	+(^6, ^9)
+11:	=(^1, ^10)
+End translation.

@@ -7,6 +7,51 @@
 #define castom_type int
 using namespace std;
 
+class Triad
+{
+	// actions:
+	// 0 for Empty
+	// V for Variable
+	// C for Constant
+	// */+/- for Math
+	// = for Assigment
+public:
+	char action;
+	string first;
+	string second;
+	Triad(char _action, string _first, string _second);
+	Triad(char _action, const char *_first, const char *_second);
+	~Triad();
+	void Print(ofstream &stream);
+	void Print();
+};
+
+Triad::Triad(char _action, string _first, string _second)
+{
+	action = _action;
+	first = _first;
+	second = _second;
+}
+
+Triad::Triad(char _action, const char *_first, const char *_second)
+{
+	action = _action;
+	first = _first;
+	second = _second;
+}
+
+Triad::~Triad() {};
+
+void Triad::Print(ofstream &stream)
+{
+	stream << static_cast<char>(action) << "(" << first << ", " << second << second << ")" << endl;
+}
+
+void Triad::Print()
+{
+	cout << static_cast<char>(action) << "(" << first << ", " << second << second << ")" << endl;
+}
+
 class Parser
 {
 public:
@@ -17,9 +62,11 @@ public:
 		OK_SIGNAL
 	};
 
-	
 	unordered_map<string, castom_type> symtable;
+
 	vector<string> symtable_keys;
+	vector<Triad> triad_list;
+
 	enum Signal cur_c;
 	enum Signal error_c;
 	string error_message;
@@ -55,14 +102,14 @@ public:
 	void Parse();
 };
 
-
 Parser::Parser(string input_path, string output_pat)
 {
+	triad_list.push_back(Triad('\0', string(""), string("")));
 	cur_c = (enum Signal)0;
 	cur_line = 1;
 	cur_pos = 0;
-	triads = 0;
-	rule_lines = 0;
+	triads = 1;
+	rule_lines = 1;
 	error_c = OK_SIGNAL;
 	error_message = "OK";
 	operators_counter = 0;
@@ -160,11 +207,12 @@ void Parser::ErrorOutput(string error_message)
 }
 void Parser::SetError(string error_message)
 {
-	if(cur_c != ERROR_SIGNAL){
+	if (cur_c != ERROR_SIGNAL)
+	{
 
-	error_c = cur_c;
-	cur_c = ERROR_SIGNAL;
-	this->error_message = error_message;
+		error_c = cur_c;
+		cur_c = ERROR_SIGNAL;
+		this->error_message = error_message;
 	}
 }
 
@@ -185,7 +233,7 @@ castom_type Parser::ProcC()
 
 	castom_type val = 0;
 	if (cur_c != '#')
-			SetError("Expected '#'");
+		SetError("Expected '#'");
 	else
 		Get();
 
@@ -235,7 +283,7 @@ string Parser::ProcI()
 		res += (char)cur_c;
 		Get();
 	}
-	if ( cur_c != EOF_SIGNAL && !IsDelim(cur_c))
+	if (cur_c != EOF_SIGNAL && !IsDelim(cur_c))
 		SetError("Unexpected symbol");
 	return res;
 }
@@ -249,8 +297,10 @@ castom_type Parser::ProcT()
 	}
 
 	const char action = (char)cur_c;
-	castom_type result = (action == '*' ? 1 : 0);
 	char empty_flag = 1;
+
+	int result;
+	int temp_triad;
 	Get();
 	SkipWS();
 	if (cur_c != '(')
@@ -263,75 +313,96 @@ castom_type Parser::ProcT()
 		Get();
 		SkipWS();
 	}
-	
-	while (cur_c != ERROR_SIGNAL && cur_c != EOF_SIGNAL && cur_c!= ')')
-	{	
-		
-		int prepos = cur_pos;
-		if (action == '*')
-		{
-			result *= ProcE();
-		}
-		else{
-			result += ProcE();
-		}
 
-		if (cur_pos == prepos) empty_flag = 1;
-		else empty_flag = 0;
+	temp_triad = triads++;
+
+	ofS << temp_triad << ":\t" << "C(" << (action == '*' ? "1" : "0") << ", @)" << endl;
+
+	triad_list.push_back(Triad('C', (action == '*' ? "1" : "0"), "@"));
+
+	while (cur_c != ERROR_SIGNAL && cur_c != EOF_SIGNAL && cur_c != ')')
+	{
+
+		int prepos = cur_pos;
+
+		result = ProcE();
+
+		ofS << triads << ":\t" << action << "(^" << temp_triad << ", ^" << result << ")" << endl;
+
+		triad_list.push_back(Triad(static_cast<char>(action), "^" + to_string(temp_triad), "^" + to_string(result)));
+
+		temp_triad = triads;
+		result = triads++;
+
+		if (cur_pos == prepos)
+			empty_flag = 1;
+		else
+			empty_flag = 0;
 
 		SkipWS();
+
 		if (cur_c != ',' && cur_c != ')')
 		{
-			if(empty_flag == 0)
+			if (empty_flag == 0)
 				SetError("Expected ',' or ')'");
-			
+
 			else
 				SetError("Expected statement");
 		}
 		else if (cur_c == ',')
 		{
 
-			if(empty_flag==1){
+			if (empty_flag == 1)
+			{
 				SetError("Expected statement");
 			}
-			else{
+			else
+			{
 
 				Get();
 				SkipWS();
-				if (cur_c !='#' && !IsLetter(cur_c) && !IsOp(cur_c)) {
+				if (cur_c != '#' && !IsLetter(cur_c) && !IsOp(cur_c) && cur_c != '(')
+				{
+
 					SetError("Expected statement");
+				}
 			}
 		}
-
-		}
-		
-
 	}
-	if(cur_c == ')'){
-		if(empty_flag == 1){
-					SetError("Empty brakets");
+	if (cur_c == ')')
+	{
+		if (empty_flag == 1)
+		{
+			SetError("Empty brakets");
 		}
-		else{
+		else
+		{
 
 			Get();
 			SkipWS();
 		}
 	}
 
-	else 
+	else
 		SetError("Expected ')'");
-	
 	return result;
 }
 
 castom_type Parser::ProcE()
 {
-	castom_type result = 0;
+	castom_type val = 0;
+	int result;
 	if (cur_c == '-')
 	{
 		Get();
 		SkipWS();
-		result = -ProcE();
+		result = ProcE();
+
+		ofS << triads << ":\t" << "-(" << result << ", @)" << endl;
+
+		triad_list.push_back(Triad('-', "^" + to_string(result), "@"));
+
+		result = triads++;
 	}
 	else if (cur_c == '+' || cur_c == '*')
 	{
@@ -348,7 +419,11 @@ castom_type Parser::ProcE()
 		string var = ProcI();
 		if (symtable.contains(var))
 		{
-			result = symtable[var];
+			val = symtable[var];
+			ofS << triads << ":\t" << "V(" << var << ", @)" << endl;
+			triad_list.push_back(Triad('V', var, "@"));
+
+			result = triads++;
 		}
 		else
 		{
@@ -359,9 +434,14 @@ castom_type Parser::ProcE()
 	}
 	else if (cur_c == '#')
 	{
-		result = ProcC();
+		val = ProcC();
+
+		ofS << triads << ":\t" << "C(" << val << ", @)" << endl;
+		triad_list.push_back(Triad('C', to_string(val), "@"));
+		result = triads++;
 	}
-	else{
+	else
+	{
 		SetError("Unexpecetd symbol");
 	}
 
@@ -371,7 +451,9 @@ castom_type Parser::ProcE()
 castom_type Parser::ProcS()
 {
 	string var;
+	int name_triad_number;
 	castom_type val;
+
 	if (cur_c != ERROR_SIGNAL)
 	{
 		if (cur_c == '(')
@@ -386,6 +468,11 @@ castom_type Parser::ProcS()
 	if (cur_c != ERROR_SIGNAL)
 	{
 		var = ProcI();
+		ofS << triads << ":\t" << "V(" << var << ", @)" << endl;
+		triad_list.push_back(Triad('V', var, "@"));
+
+		name_triad_number = triads++;
+
 		SkipWS();
 	}
 
@@ -404,28 +491,31 @@ castom_type Parser::ProcS()
 	{
 		val = ProcE();
 	}
-	if (cur_c!= ')'){
-	
+	if (cur_c != ')')
+	{
+
 		SetError("Expected ')'");
-	
 	}
-	else{
-		Get();}
+	else
+	{
+		Get();
+	}
 	if (cur_c != ERROR_SIGNAL)
 	{
 		if (!symtable.contains(var))
 			symtable_keys.push_back(var);
 		symtable[var] = val;
 		operators_counter++;
-		//OUTPUT
-		// ofS << "Operator " << operators_counter << ":\t" << var << " = " << format("{:b}", symtable[var]) << endl;
+
+		ofS << triads << ":\t" << "=(^" << name_triad_number << ", ^" << val << ")" << endl;
+		triad_list.push_back(Triad('=', "^" + to_string(name_triad_number), "^" + val));
 	}
-	return symtable[var];
+	return triads++;
 }
 
 void Parser::Parse()
 {
-	ofS << "Start parsing" << endl;
+	ofS << "Start translation" << endl;
 
 	Get();
 	SkipWS();
@@ -433,18 +523,19 @@ void Parser::Parse()
 	while (cur_c != EOF_SIGNAL && cur_c != ERROR_SIGNAL)
 	{
 		if (cur_c != EOF_SIGNAL)
-			if (cur_c == '('){
-				ofS<<
+			if (cur_c == '(')
+			{
+				ofS << "(" << rule_lines++ << ")" << endl;
 				ProcS();
-
 			}
-			else{
-			SetError("Unexpected symbol");
-		}
+			else
+			{
+				SetError("Unexpected symbol");
+			}
 
 		if (cur_c != EOF_SIGNAL)
 		{
-			
+
 			SkipWS();
 		}
 	}
@@ -452,19 +543,16 @@ void Parser::Parse()
 	if (cur_c == ERROR_SIGNAL)
 	{
 		ErrorOutput(error_message);
-		ofS << "Abort parsing." << endl;
+		ofS << "Abort translation." << endl;
 	}
 	else
 	{
-		ofS << "End parsing." << endl;
-		if (symtable_keys.size() == 0)
-			ofS << "No variables defined." << endl;
-		else
-			ofS << symtable_keys.size() << " variable" << (symtable_keys.size() > 1 ? "s" : "") << " defined." << endl;
-		for (string i : symtable_keys)
-		{
-			ofS << i << " = " << format("{:b}", symtable[i]) << endl;
-		}
+		ofS << "End translation." << endl;
+	}
+
+	for (auto i : triad_list)
+	{
+		i.Print();
 	}
 }
 

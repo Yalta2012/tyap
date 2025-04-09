@@ -1,3 +1,9 @@
 Start parsing
-Expected letter or '_' in line: 1, pos: 2 in char: "," (signal code:44)
-Abort parsing.
+Operator 1:	a = 11
+Operator 2:	c = 100
+Operator 3:	b = 10001
+End parsing.
+3 variables defined.
+a = 11
+c = 100
+b = 10001

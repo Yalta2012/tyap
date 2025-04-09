@@ -301,7 +301,7 @@ castom_type Parser::ProcT()
 
 				Get();
 				SkipWS();
-				if (cur_c !='#' && !IsLetter(cur_c) && !IsOp(cur_c)) {
+				if (cur_c !='#' && !IsLetter(cur_c) && !IsOp(cur_c) && cur_c != '(') {
 					SetError("Expected statement");
 			}
 		}
