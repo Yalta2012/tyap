@@ -100,7 +100,8 @@ public:
   castom_type ProcS();
   void Parse();
 
-
+  string GetTriadVal(int index,int pos);
+  void Optimize();
 };
 
 void Parser::TriadListPrint() {
@@ -369,8 +370,8 @@ castom_type Parser::ProcE() {
     // ofS << triads << ":\t" << "-(" << result << ", @)" << endl;
 
     triad_list.push_back(Triad('-', "^" + to_string(result), "@"));
+
     result = triads++;
-    
   } else if (cur_c == '+' || cur_c == '*') {
     result = ProcT();
   }
@@ -393,7 +394,6 @@ castom_type Parser::ProcE() {
     }
   } else if (cur_c == '#') {
     val = ProcC();
-
     // ofS << triads << ":\t" << "C(" << val << ", @)" << endl;
     triad_list.push_back(Triad('C', to_string(val), "@"));
     result = triads++;
@@ -421,6 +421,7 @@ castom_type Parser::ProcS() {
     var = ProcI();
     // ofS << triads << ":\t" << "V(" << var << ", @)" << endl;
     triad_list.push_back(Triad('V', var, "@"));
+
     name_triad_number = triads++;
 
     SkipWS();
@@ -459,7 +460,7 @@ castom_type Parser::ProcS() {
 }
 
 void Parser::Parse() {
-  ofS << "Start translation" << endl;
+  // ofS << "Start translation" << endl;
 
   Get();
   SkipWS();
@@ -467,12 +468,12 @@ void Parser::Parse() {
   while (cur_c != EOF_SIGNAL && cur_c != ERROR_SIGNAL) {
     if (cur_c != EOF_SIGNAL)
       if (cur_c == '(') {
-        ofS << "(" << rule_lines++ << ")" << endl;
+        cout << "(" << rule_lines++ << ")" << endl;
         ProcS();
         for (; triad_index < triad_list.size(); triad_index++) {
           if (triad_list[triad_index].action != '\0') {
-            ofS << triad_index << ": " << triad_list[triad_index].ToString()
-                << endl;
+            cout << triad_index << ": " << triad_list[triad_index].ToString()
+                 << endl;
           }
         }
       } else {
@@ -489,11 +490,77 @@ void Parser::Parse() {
     ErrorOutput(error_message);
     ofS << "Abort translation." << endl;
   } else {
-    ofS << "End translation." << endl;
   }
 }
 
+string Parser::GetTriadVal(int index,int pos) {
+  string result = string("^") + to_string(index);
+  Triad *triad = &triad_list[index];
+  switch (triad->action) {
+  case 'C':
+    result = triad->first;
+    triad->second = "@";
+    triad->action = '\0';
+    break;
+  case 'V':
+   if(pos==1){
+     result = triad->first;
+     triad->action = '\0';
+    }
+    break;
 
+  default:
+    break;
+  }
+
+  return result;
+}
+
+void Parser::Optimize() {
+  if (cur_c == ERROR_SIGNAL)
+    return;
+
+  for (int i = 0; i < triad_list.size(); i++) {
+    Triad *triad = &triad_list[i];
+
+    if (triad->second[0] == '^' && triad->action != '=') {
+      triad->second = GetTriadVal(stoi(triad->second.substr(1)),2);
+    }
+
+    // if (triad->first[0] == '^' && (('0' <= triad->second[0] && '9' >= triad->second[0])||triad->second[0] == '^' )) {
+    //   triad->first = GetTriadVal(stoi(triad->first.substr(1)),1);
+    // }
+
+    if((triad->action=='=' &&!('0' <= triad->second[0] && '9' >= triad->second[0]) )|| (triad->action!='=' &&(('0' <= triad->second[0] && '9' >= triad->second[0]) ||triad->action=='-') )){
+      triad->first = GetTriadVal(stoi(triad->first.substr(1)),1);
+    }
+
+    // if(triad->action == '=' && || triad == '')
+
+    if (triad->action == '+' || triad->action == '*') {
+      if ('0' <= triad->first[0] && '9' >= triad->first[0] &&
+          '0' <= triad->second[0] && '9' >= triad->second[0]) {
+
+        int first_int, second_int;
+        first_int = stoi(triad->first);
+        second_int = stoi(triad->second);
+
+        if (triad->action == '+')
+          first_int += second_int;
+        else
+          first_int *= second_int;
+
+        triad->first = to_string(first_int);
+        triad->second = "@";
+        triad->action = 'C';
+      }
+    } else if (triad->action == '-' && '0' <= triad->first[0] &&
+               '9' >= triad->first[0]) {
+      triad->first = to_string(-stoi(triad->first));
+      triad->action = 'C';
+    }
+  }
+}
 
 int main(int argc, char *argw[]) {
 
@@ -519,8 +586,8 @@ int main(int argc, char *argw[]) {
   }
 
   parser.Parse();
-//   parser.TriadListPrint();
-
+  parser.Optimize();
+  parser.TriadListPrint(parser.ofS);
 
   return 0;
 }
