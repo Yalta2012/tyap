@@ -271,8 +271,10 @@ string Parser::ProcI() {
   return res;
 }
 
-castom_type Parser::ProcT() {
-  if (cur_c != '*' && cur_c != '+') {
+castom_type Parser::ProcT()
+{
+  if (cur_c != '*' && cur_c != '+')
+  {
     SetError("Something strange (from ProcT) :/");
     return 0;
   }
@@ -284,76 +286,66 @@ castom_type Parser::ProcT() {
   int temp_triad;
   Get();
   SkipWS();
-  if (cur_c != '(') {
+  if (cur_c != '(')
+  {
     SetError("Expected '('");
   }
 
-  if (cur_c != ERROR_SIGNAL) {
+  if (cur_c != ERROR_SIGNAL)
+  {
     Get();
     SkipWS();
   }
 
-  temp_triad = triads++;
+  if (cur_c != ERROR_SIGNAL)
+  {
+    temp_triad = ProcE();
+    result = temp_triad;
+    SkipWS();
+    if (cur_c == ',')
+    {
+      Get();
+      SkipWS();
+      if (cur_c != '#' && !IsLetter(cur_c) && !IsOp(cur_c) && cur_c != '(')
+      {
+        SetError("Expected statement");
+      }
+    }
+    else if (cur_c != ')')
+    {
+      SetError("Expected ',' or ')'");
+    }
+  }
 
-  // ofS << temp_triad << ":\t" << "C(" << (action == '*' ? "1" : "0") << ", @)"
-  // << endl;
 
-  triad_list.push_back(Triad('C', (action == '*' ? "1" : "0"), "@"));
-
-  while (cur_c != ERROR_SIGNAL && cur_c != EOF_SIGNAL && cur_c != ')') {
-
-    int prepos = cur_pos;
-
+  while (cur_c != ERROR_SIGNAL && cur_c != EOF_SIGNAL && cur_c != ')')
+  {
     result = ProcE();
-
-    // ofS << triads << ":\t" << action << "(^" << temp_triad << ", ^" << result
-    // << ")" << endl;
-
     triad_list.push_back(Triad(static_cast<char>(action),
                                "^" + to_string(temp_triad),
                                "^" + to_string(result)));
-
     temp_triad = triads;
     result = triads++;
-
-    if (cur_pos == prepos)
-      empty_flag = 1;
-    else
-      empty_flag = 0;
-
     SkipWS();
-
-    if (cur_c != ',' && cur_c != ')') {
-      if (empty_flag == 0)
-        SetError("Expected ',' or ')'");
-
-      else
-        SetError("Expected statement");
-    } else if (cur_c == ',') {
-
-      if (empty_flag == 1) {
-        SetError("Expected statement");
-      } else {
-
-        Get();
-        SkipWS();
-        if (cur_c != '#' && !IsLetter(cur_c) && !IsOp(cur_c) && cur_c != '(') {
-
-          SetError("Expected statement");
-        }
-      }
-    }
-  }
-  if (cur_c == ')') {
-    if (empty_flag == 1) {
-      SetError("Empty brakets");
-    } else {
-
+    if (cur_c == ',')
+    {
       Get();
       SkipWS();
+      if (cur_c != '#' && !IsLetter(cur_c) && !IsOp(cur_c) && cur_c != '(')
+      {
+        SetError("Expected statement");
+      }
+    }
+    else if (cur_c != ')')
+    {
+      SetError("Expected ',' or ')'");
     }
   }
-
+  if (cur_c == ')')
+  {
+    Get();
+    SkipWS();
+  }
   else
     SetError("Expected ')'");
   return result;
