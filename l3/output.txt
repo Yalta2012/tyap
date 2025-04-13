@@ -1,9 +1,13 @@
 Start parsing
-Operator 1:	a = 11
-Operator 2:	c = 100
-Operator 3:	b = 10001
+Operator 1:	a = 101
+Operator 2:	b = 101
+Operator 3:	c = 111
+Operator 4:	d = -10101111
+Operator 5:	eEeE = -10100001
 End parsing.
-3 variables defined.
-a = 11
-c = 100
-b = 10001
+5 variables defined.
+a = 101
+b = 101
+c = 111
+d = -10101111
+eEeE = -10100001

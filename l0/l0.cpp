@@ -123,7 +123,7 @@ int main(int argc, char *argw[])
 	string outfile = string(argw[2]);
 	if (infile == outfile)
 	{
-		cout << "ERORR 2: same file names\n";
+		cout << "ERROR 2: same file names\n";
 		return 2;
 	}
 	ifstream instream(infile);

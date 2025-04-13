@@ -16,11 +16,8 @@ public:
 		ERROR_SIGNAL,
 		OK_SIGNAL
 	};
-	// enum ErrorType{
-	// 	EXPECTED_GRID_SIMBOL ,
 
-	// };
-	unordered_map<string, castom_type> symtable;
+	unordered_map<string, castom_type> symtable;	
 	vector<string> symtable_keys;
 	enum Signal cur_c;
 	enum Signal error_c;
@@ -32,7 +29,6 @@ public:
 	ifstream inS;
 	ofstream ofS;
 
-	// Parser(string input_path);
 	Parser(string input_path, string output_pat);
 	~Parser();
 
@@ -56,10 +52,6 @@ public:
 	castom_type ProcS();
 	void Parse();
 };
-
-// Parser::Parser(string input_path){
-
-// }
 
 Parser::Parser(string input_path, string output_pat)
 {
@@ -481,7 +473,7 @@ int main(int argc, char *argw[])
 	string outfile = string(argw[2]);
 	if (infile == outfile)
 	{
-		cout << "ERORR 2: same file names\n";
+		cout << "ERROR 2: same file names\n";
 		return 2;
 	}
 

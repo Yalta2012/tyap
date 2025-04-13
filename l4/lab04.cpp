@@ -408,8 +408,6 @@ castom_type Parser::ProcE()
     SkipWS();
     result = ProcE();
 
-    // ofS << triads << ":\t" << "-(" << result << ", @)" << endl;
-
     triad_list.push_back(Triad('-', "^" + to_string(result), "@"));
     result = triads++;
   }
@@ -429,9 +427,7 @@ castom_type Parser::ProcE()
     if (symtable.contains(var))
     {
       val = symtable[var];
-      // ofS << triads << ":\t" << "V(" << var << ", @)" << endl;
       triad_list.push_back(Triad('V', var, "@"));
-
       result = triads++;
     }
     else
@@ -444,8 +440,6 @@ castom_type Parser::ProcE()
   else if (cur_c == '#')
   {
     val = ProcC();
-
-    // ofS << triads << ":\t" << "C(" << val << ", @)" << endl;
     triad_list.push_back(Triad('C', to_string(val), "@"));
     result = triads++;
   }
@@ -470,16 +464,13 @@ castom_type Parser::ProcS()
       SkipWS();
     }
     else
-
       SetError("Expected '('");
   }
   if (cur_c != ERROR_SIGNAL)
   {
     var = ProcI();
-    // ofS << triads << ":\t" << "V(" << var << ", @)" << endl;
     triad_list.push_back(Triad('V', var, "@"));
     name_triad_number = triads++;
-
     SkipWS();
   }
 
@@ -514,8 +505,6 @@ castom_type Parser::ProcS()
     symtable[var] = val;
     operators_counter++;
 
-    // ofS << triads << ":\t" << "=(^" << name_triad_number << ", ^" << val <<
-    // ")" << endl;
     triad_list.push_back(Triad('=', string("^") + to_string(name_triad_number),
                                string("^") + to_string(val)));
   }
@@ -580,7 +569,7 @@ int main(int argc, char *argw[])
   string outfile = string(argw[2]);
   if (infile == outfile)
   {
-    cout << "ERORR 2: same file names\n";
+    cout << "ERROR 2: same file names\n";
     return 2;
   }
 
@@ -597,7 +586,5 @@ int main(int argc, char *argw[])
   }
 
   parser.Parse();
-  //   parser.TriadListPrint();
-
   return 0;
 }
