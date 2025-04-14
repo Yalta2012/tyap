@@ -6,6 +6,15 @@
         "fstream": "cpp",
         "*.tcc": "cpp",
         "concepts": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "iostream": "cpp",
+        "array": "cpp",
+        "charconv": "cpp",
+        "compare": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "variant": "cpp",
+        "ostream": "cpp"
     }
 }

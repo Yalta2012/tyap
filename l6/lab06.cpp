@@ -1,9 +1,9 @@
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <stack>
 #include <unordered_map>
 #include <vector>
-#include <stack>
 
 #define castom_type int
 
@@ -71,6 +71,14 @@ Symbol::~Symbol() {}
 class Parser {
  public:
   enum Signal { EOF_SIGNAL = 256, ERROR_SIGNAL, OK_SIGNAL };
+  enum ParserState { OK_PRS, STOP_PRS, ERROR_PRS };
+  enum RelationSignal {
+    EQ_RS,    // equal
+    LS_RS,    // less
+    MR_RS,    // more
+    LSEQ_RS,  // less or more
+    ER_RS     // error
+  };
 
   unordered_map<string, castom_type> symtable;
   vector<string> symtable_keys;
@@ -78,8 +86,8 @@ class Parser {
   vector<Triad> triad_list;
   int triads;
 
-  stack<Symbol>symbol_stack;
-  stack<Symbol>action_stack; //for *( , , ) and +( , , ,)
+  stack<Symbol> symbol_stack;
+  stack<Symbol> action_stack;  // for *( , , ) and +( , , ,)
 
   enum Signal cur_c;
 
@@ -96,8 +104,10 @@ class Parser {
   ~Parser();
 
   void SetError(string _error_message, string error_string);
+  void SetError(string _error_message, Symbol _symbol);
   void SetError(string _error_message, Signal error_char);
   void SetError(string _error_message);
+  void ErrorOutput();
 
   static bool IsLetter(char c);
   static bool IsOp(char c);
@@ -105,12 +115,17 @@ class Parser {
   static bool IsWS(char c);
   static bool IsDelim(char c);
   static bool IsInAlphabet(char c);
+  static int NTtoIndex(char c);
 
   int SkipWS();
   void Get();
   castom_type GetC();
   string GetI();
+
   Symbol GetSymbol();
+  enum ParserState Reduse();
+  enum ParserState ReduseS_();
+  static char GetRelation(Symbol a, Symbol b);
   void Parse();
 
   void TriadListPrint();
@@ -125,7 +140,7 @@ Parser::Parser(string input_path, string output_pat) {
   inS.open(input_path);
   ofS.open(output_pat);
   triad_list.push_back(Triad('\0', string(""), string("")));
-  symbol_stack.push(Symbol('$',0,0,"@"));
+  symbol_stack.push(Symbol('$', 0, 0, "@"));
   if (inS) inS >> noskipws;
 }
 Parser::~Parser() {
@@ -172,14 +187,31 @@ void Parser::SetError(string _error_message, Signal error_char) {
     _error_string = string{static_cast<char>(error_char)};
   SetError(_error_message, _error_string);
 }
+void Parser::SetError(string _error_message, Symbol _symbol) {
+  string _error_string = string("type: ") + string{_symbol.type};
+  if (_symbol.type == 'C')
+    _error_string += string(" constant witg value: ") + _symbol.value;
+  else if (_symbol.type == 'I')
+    _error_string += string(" variable name: ") + _symbol.value;
+  _error_string += string(" what equals triad ") + to_string(_symbol.triad_number);
+  SetError(_error_message, _error_string);
+}
 void Parser::SetError(string _error_message) {
   SetError(_error_message, cur_c);
+}
+void Parser::ErrorOutput() {
+  ofS << error_message << " in line: " << cur_line << ", pos: " << cur_pos
+      << " in: " << error_string << endl;
+  cout << error_message << " in line: " << cur_line << ", pos: " << cur_pos
+       << " in: " << error_string << endl;
 }
 
 bool Parser::IsLetter(char c) {
   return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_');
 }
-bool Parser::IsOp(char c) { return (c == '+' || c == '-' || c == '*'); }
+bool Parser::IsOp(char c) {
+  return (c == '+' || c == '-' || c == '*' || c == ':');
+}
 bool Parser::IsDig(char c) { return c == '1' || c == '0'; }
 bool Parser::IsWS(char c) {
   return c == '\n' || c == '\r' || c == ' ' || c == '\t';
@@ -261,6 +293,84 @@ string Parser::GetI() {
   return result;
 }
 
+int Parser::NTtoIndex(char c) {
+  int result;
+  switch (c) {
+    case 'S':
+      result = 0;
+      break;
+    case 'E':
+      result = 1;
+      break;
+    case 'T':
+      result = 2;
+      break;
+    case ':':
+      result = 3;
+      break;
+    case '(':
+      result = 4;
+      break;
+    case ')':
+      result = 5;
+      break;
+    case ',':
+      result = 6;
+      break;
+    case '+':
+      result = 7;
+      break;
+    case '*':
+      result = 8;
+      break;
+    case '-':
+      result = 9;
+      break;
+    case 'I':
+      result = 10;
+      break;
+    case 'C':
+      result = 11;
+      break;
+    case '$':
+      result = 12;
+      break;
+    default:
+      result = -1;
+      break;
+  }
+  return result;
+}
+char Parser::GetRelation(Symbol a, Symbol b) {
+  char relation_table[13][13] = {
+      // clang-format off
+      /*            S     E     T     :     (     )     ,     +     *     -     I     C     $   */
+      /*    S   */ {0,    0,    0,    0,    '=',  '>',  '>',  0,    0,    0,    '>',  '>',  '=' },
+      /*    E   */ {0,    0,    0,    0,    0,    '=',  '>',  0,    0,    0,    0,    0,    0   },
+      /*    T   */ {0,    0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0   },
+      /*    :   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0   },
+      /*    (   */ {0,    0,    '=',  0,    '<',  0,    0,    '<',  '<',  '<',  '%',  '<',  0   },
+      /*    )   */ {0,    0,    0,    0,    '>',  0,    '>',  0,    0,    0,    0,    0,    '>' },
+      /*    ,   */ {0,    0,    0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0   },
+      /*    +   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0   },
+      /*    *   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0   },
+      /*    -   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0   },
+      /*    I   */ {0,    0,    0,    '=',  0,    '>',    '>',  0,    0,    0,    0,    0,    0   },
+      /*    C   */ {0,    0,    0,    0,    0,    '>',    '>',  0,    0,    0,    0,    0,    0   },
+      /*    $   */ {'=',  0,    0,    0,    '<',  0,    0,    0,    0,    0,    0,    0,    0   },
+  };
+  // clang-format on
+  char result;
+  int x = NTtoIndex(a.type);
+  int y = NTtoIndex(b.type);
+  if (x < 0 || y < 0)
+    result = 0;
+  else
+    result = relation_table[x][y];
+  if (!result) result = '0';
+  return result;
+}
+
 Symbol Parser::GetSymbol() {
   Symbol result;
   if (cur_c == '#') {
@@ -277,28 +387,97 @@ Symbol Parser::GetSymbol() {
     result.type = '$';
     result.value = "";
     result.value = string{'@'};
-    Get();
   } else {
     result.type = static_cast<char>(cur_c);
     result.value = "";
     result.value = string{'@'};
     Get();
   }
+  return result;
+}
 
-  if(cur_c != ERROR_SIGNAL) symbol_stack.push(result);
+// enum Parser::ParserState Parser::ReduseS_(){
+//   enum ParserState result = STOP_PRS;
+//   if()
+// }
+
+enum Parser::ParserState Parser::Reduse() {
+  Symbol new_symbol;
+  enum ParserState result = OK_PRS;
+  string rule = "";
+
+  do {
+    rule = symbol_stack.top().type + rule;
+    symbol_stack.pop();
+  } while (symbol_stack.top().relatione == '=');
+  cout<<rule<<endl;
+  if(rule == "I" || rule == "C" || rule == "S"){
+
+  }
+  else if (rule == "S(I:E)" || rule == "(I:E)"){
+
+  }
+  else if (rule == "-E"){
+
+  }
+  else if (rule == "+(T)"){
+
+  }
+  else if (rule == "*(T)"){
+    
+  }
+  else if (rule == "T,E"){
+
+  }
+  else if (rule == "E"){
+
+  }
+  new_symbol.relatione = GetRelation(symbol_stack.top() ,new_symbol);
+  cout << "RULE: " << rule << endl;
   return result;
 }
 
 void Parser::Parse() {
+  enum ParserState parser_state = OK_PRS;
+  Symbol new_simbol;
+
   Get();
   SkipWS();
-  while (cur_c != EOF_SIGNAL && cur_c != ERROR_SIGNAL) {
-    Symbol a = GetSymbol();
-    cout << a.type << " " << a.value << endl;
-    SkipWS();
+
+  if (cur_c != ERROR_SIGNAL) new_simbol = GetSymbol();
+  if (cur_c == ERROR_SIGNAL) parser_state = ERROR_PRS;
+
+  while (parser_state == OK_PRS) {
+    new_simbol.relatione = GetRelation(symbol_stack.top(), new_simbol);
+
+    if (new_simbol.relatione == '<' || new_simbol.relatione == '=' ||
+        new_simbol.relatione == '%') {
+      symbol_stack.push(new_simbol);
+
+      if (new_simbol.type == '+' || new_simbol.type == '*')
+        action_stack.push(new_simbol);
+
+      SkipWS();
+
+      new_simbol = GetSymbol();
+
+      if (cur_c == ERROR_SIGNAL) parser_state = ERROR_PRS;
+
+    } else if (new_simbol.relatione == '0') {
+      parser_state = ERROR_PRS;
+      // cout<<symbol_stack.top().type<<")))"<< symbol_stack.top().triad_number
+      // << ")"<< endl;
+      cout<<symbol_stack.top().type<<endl;
+      SetError("Unexpected nonterminal", new_simbol);
+    } else if (new_simbol.relatione == '>') {
+      parser_state = Reduse();
+    }
+  }
+
+  if (cur_c == ERROR_SIGNAL) {
+    ErrorOutput();
   }
 }
-
 int main(int argc, char* argw[]) {
   if (argc < 3 || argc > 4) {
     cout << "ERROR 1: needed 2 arguments\n";
