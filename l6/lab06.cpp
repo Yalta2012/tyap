@@ -193,7 +193,8 @@ void Parser::SetError(string _error_message, Symbol _symbol) {
     _error_string += string(" constant witg value: ") + _symbol.value;
   else if (_symbol.type == 'I')
     _error_string += string(" variable name: ") + _symbol.value;
-  _error_string += string(" what equals triad ") + to_string(_symbol.triad_number);
+  _error_string +=
+      string(" what equals triad ") + to_string(_symbol.triad_number);
   SetError(_error_message, _error_string);
 }
 void Parser::SetError(string _error_message) {
@@ -217,7 +218,7 @@ bool Parser::IsWS(char c) {
   return c == '\n' || c == '\r' || c == ' ' || c == '\t';
 }
 bool Parser::IsDelim(char c) {
-  return IsOp(c) || IsWS(c) || c == '(' || c == ')' || c == ',';
+  return IsOp(c) || IsWS(c) || c == '(' || c == ')' || c == ',' || '[' || ']';
 }
 bool Parser::IsInAlphabet(char c) {
   return IsLetter(c) || IsOp(c) || IsDig(c) || IsWS(c) || IsDelim(c) ||
@@ -335,6 +336,12 @@ int Parser::NTtoIndex(char c) {
     case '$':
       result = 12;
       break;
+    case '[':
+      result = 13;
+      break;
+    case ']':
+      result = 14;
+      break;
     default:
       result = -1;
       break;
@@ -342,27 +349,31 @@ int Parser::NTtoIndex(char c) {
   return result;
 }
 char Parser::GetRelation(Symbol a, Symbol b) {
-  char relation_table[13][13] = {
+  char relation_table[15][15] = {
       // clang-format off
-      /*            S     E     T     :     (     )     ,     +     *     -     I     C     $   */
-      /*    S   */ {0,    0,    0,    0,    '=',  '>',  '>',  0,    0,    0,    '>',  '>',  '=' },
-      /*    E   */ {0,    0,    0,    0,    0,    '=',  '>',  0,    0,    0,    0,    0,    0   },
-      /*    T   */ {0,    0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0   },
-      /*    :   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0   },
-      /*    (   */ {0,    0,    '=',  0,    '<',  0,    0,    '<',  '<',  '<',  '%',  '<',  0   },
-      /*    )   */ {0,    0,    0,    0,    '>',  0,    '>',  0,    0,    0,    0,    0,    '>' },
-      /*    ,   */ {0,    0,    0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0   },
-      /*    +   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0   },
-      /*    *   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0   },
-      /*    -   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0   },
-      /*    I   */ {0,    0,    0,    '=',  0,    '>',    '>',  0,    0,    0,    0,    0,    0   },
-      /*    C   */ {0,    0,    0,    0,    0,    '>',    '>',  0,    0,    0,    0,    0,    0   },
-      /*    $   */ {'=',  0,    0,    0,    '<',  0,    0,    0,    0,    0,    0,    0,    0   },
+      /*            S     E     T     :     (     )     ,     +     *     -     I     C     $     [     ]     */
+      /*    S   */ {0,    0,    0,    0,    0,    0,    '>',  0,    0,    0,    '>',  '>',  '=',  '=',  '>'   },
+      /*    E   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '='   },
+      /*    T   */ {0,    0,    0,    0,    0,    '=',  '=',    0,    0,    0,    0,    0,    0,    0,    0     },
+      /*    :   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    0,    0     },
+      /*    (   */ {0,    0,    '=',  0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    0,    0     },
+      /*    )   */ {0,    0,    0,    0,    0,    0,    '>',  0,    0,    0,    0,    0,    0,    0,    '>'     },
+      /*    ,   */ {0,    '=',    0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    0,    0     },
+      /*    +   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0     },
+      /*    *   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0     },
+      /*    -   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    0,    0     },
+      /*    I   */ {0,    0,    0,    '=',  0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>'   },
+      /*    C   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>'   },
+      /*    $   */ {0,    0,    0,    0,    '<',  0,    0,    0,    0,    0,    0,    0,    0,    '<',  0     },
+      /*    [   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    '=',  0,    0,    0,    0     },
+      /*    ]   */ {'=',  0,    0,    0,    '<',  0,    0,    0,    0,    0,    0,    0,    '>',  '>',  0     },
+      
   };
   // clang-format on
   char result;
   int x = NTtoIndex(a.type);
   int y = NTtoIndex(b.type);
+
   if (x < 0 || y < 0)
     result = 0;
   else
@@ -378,11 +389,13 @@ Symbol Parser::GetSymbol() {
     result.type = 'C';
     result.triad_number = triads++;
     triad_list.push_back(Triad('C', result.value, string("@")));
+
   } else if (IsLetter(cur_c)) {
     result.value = GetI();
     result.type = 'I';
     result.triad_number = triads++;
     triad_list.push_back(Triad('I', result.value, string("@")));
+
   } else if (cur_c == EOF_SIGNAL) {
     result.type = '$';
     result.value = "";
@@ -396,44 +409,73 @@ Symbol Parser::GetSymbol() {
   return result;
 }
 
-// enum Parser::ParserState Parser::ReduseS_(){
-//   enum ParserState result = STOP_PRS;
-//   if()
-// }
-
 enum Parser::ParserState Parser::Reduse() {
   Symbol new_symbol;
   enum ParserState result = OK_PRS;
   string rule = "";
+  Symbol bufferI, bufferC, bufferE, bufferT;
 
-  do {
+  while (symbol_stack.top().relatione == '=') {
     rule = symbol_stack.top().type + rule;
+    if (symbol_stack.top().type == 'I') bufferI = symbol_stack.top();
+    if (symbol_stack.top().type == 'C') bufferC = symbol_stack.top();
+    if (symbol_stack.top().type == 'E') bufferE = symbol_stack.top();
+    if (symbol_stack.top().type == 'T') bufferT = symbol_stack.top();
     symbol_stack.pop();
-  } while (symbol_stack.top().relatione == '=');
-  cout<<rule<<endl;
-  if(rule == "I" || rule == "C" || rule == "S"){
+  }
+  rule = symbol_stack.top().type + rule;
+  if (symbol_stack.top().type == 'I') bufferI = symbol_stack.top();
+  if (symbol_stack.top().type == 'C') bufferC = symbol_stack.top();
+  if (symbol_stack.top().type == 'E') bufferE = symbol_stack.top();
+  if (symbol_stack.top().type == 'T') bufferT = symbol_stack.top();
 
-  }
-  else if (rule == "S(I:E)" || rule == "(I:E)"){
+  symbol_stack.pop();
 
-  }
-  else if (rule == "-E"){
+  if (rule == "I" || rule == "C") {
+    new_symbol.type = 'E';
+    if (rule == "I") {
+      new_symbol.value = bufferI.value;
+      new_symbol.triad_number = bufferI.triad_number;
+    } else {
+      new_symbol.value = bufferC.value;
+      new_symbol.triad_number = bufferC.triad_number;
+    }
+  } else if (rule == "S[I:E]" || rule == "[I:E]") {
+    new_symbol.type = 'S';
+    new_symbol.triad_number = triads++;
+    triad_list.push_back(Triad('=',
+                               string("^") + to_string(bufferI.triad_number),
+                               string("^") + to_string(bufferE.triad_number)));
+  } /*else if (rule == "-E") {
+    new_symbol.type = 'E';
+    new_symbol.triad_number = triads++;
+    triad_list.push_back(
+        Triad('-', string("^") + to_string(bufferE.triad_number), "@"));
+  } */
+  else if (rule == "+(T)") {
+    new_symbol.type = 'E';
+    action_stack.pop();
+  } else if (rule == "*(T)") {
+    new_symbol.type = 'E';
+    action_stack.pop();
+  } else if (rule == "T,E") {
+    new_symbol.type = 'T';
+    new_symbol.triad_number = triads++;
+    triad_list.push_back(Triad(action_stack.top().type,
+                               string("^") + to_string(bufferT.triad_number),
+                               string("^") + to_string(bufferE.triad_number)));
 
+  } else if (rule == "E") {
+    new_symbol.type = 'T';
+    new_symbol.triad_number = bufferE.triad_number;
+  } else {
+    SetError("Unknown rule", rule);
   }
-  else if (rule == "+(T)"){
-
-  }
-  else if (rule == "*(T)"){
-    
-  }
-  else if (rule == "T,E"){
-
-  }
-  else if (rule == "E"){
-
-  }
-  new_symbol.relatione = GetRelation(symbol_stack.top() ,new_symbol);
-  cout << "RULE: " << rule << endl;
+  new_symbol.relatione = GetRelation(symbol_stack.top(), new_symbol);
+  // cout << "RULE: " << rule << " " << new_symbol.type << " "
+  //      << new_symbol.relatione << " " << symbol_stack.top().type << endl;
+  cout<<"REDUSE <"<< rule<< "> TO: " << new_symbol.type<<endl;
+  symbol_stack.push(new_symbol);
   return result;
 }
 
@@ -449,9 +491,10 @@ void Parser::Parse() {
 
   while (parser_state == OK_PRS) {
     new_simbol.relatione = GetRelation(symbol_stack.top(), new_simbol);
-
-    if (new_simbol.relatione == '<' || new_simbol.relatione == '=' ||
-        new_simbol.relatione == '%') {
+    if (new_simbol.type == '$' && symbol_stack.top().type == 'S') {
+      parser_state = STOP_PRS;
+    } else if (new_simbol.relatione == '<' || new_simbol.relatione == '=' ||
+               new_simbol.relatione == '%') {
       symbol_stack.push(new_simbol);
 
       if (new_simbol.type == '+' || new_simbol.type == '*')
@@ -465,11 +508,13 @@ void Parser::Parse() {
 
     } else if (new_simbol.relatione == '0') {
       parser_state = ERROR_PRS;
-      // cout<<symbol_stack.top().type<<")))"<< symbol_stack.top().triad_number
-      // << ")"<< endl;
-      cout<<symbol_stack.top().type<<endl;
-      SetError("Unexpected nonterminal", new_simbol);
+
+      SetError(
+          "Unexpected nonterminal after " + string{symbol_stack.top().type},
+          new_simbol);
     } else if (new_simbol.relatione == '>') {
+      cout << "REDUSE: " << symbol_stack.top().type << " " << new_simbol.type
+           << endl;
       parser_state = Reduse();
     }
   }
