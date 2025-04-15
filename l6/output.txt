@@ -1,1 +1,1 @@
-Unknown rule in line: 1, pos: 18 in: +(T,E
+Unexpected nonterminal after [ in line: 2, pos: 0 in: type: ]

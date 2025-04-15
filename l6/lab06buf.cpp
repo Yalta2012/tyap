@@ -193,6 +193,8 @@ void Parser::SetError(string _error_message, Symbol _symbol) {
     _error_string += string(" constant witg value: ") + _symbol.value;
   else if (_symbol.type == 'I')
     _error_string += string(" variable name: ") + _symbol.value;
+  _error_string +=
+      string(" what equals triad ") + to_string(_symbol.triad_number);
   SetError(_error_message, _error_string);
 }
 void Parser::SetError(string _error_message) {
@@ -340,9 +342,6 @@ int Parser::NTtoIndex(char c) {
     case ']':
       result = 14;
       break;
-    case 'M':
-      result = 15;
-      break;
     default:
       result = -1;
       break;
@@ -350,25 +349,24 @@ int Parser::NTtoIndex(char c) {
   return result;
 }
 char Parser::GetRelation(Symbol a, Symbol b) {
-  char relation_table[16][16] = {
+  char relation_table[15][15] = {
       // clang-format off
-	  /*              S     E     T     :     (     )     ,     +     *     -     I     C     $     [     ]     M     */
-      /*    S   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    '>',  '>',  '=',  '=',  '>',  0   },
-      /*    E   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>',  0   },
-      /*    T   */ {0,    0,    0,    0,    0,    '=',  '=',  0,    0,    0,    0,    0,    0,    0,    0,    0     },
-      /*    :   */ {0,    0,    0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '>',  0,    '='     },
-      /*    (   */ {0,    '<',  '=',  0,    0,    0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',  0 ,   '<'    },
-      /*    )   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>',  0   },
-      /*    ,   */ {0,    '<',  0,    0,    0,    0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',  0,    '='     },
-      /*    +   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0     },
-      /*    *   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0     },
-      /*    -   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',   0,    0     },
-      /*    I   */ {0,    0,    0,    '=',  0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>',  0   },
-      /*    C   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>',  0   },
-      /*    $   */ {0,    0,    0,    0,    '<',  0,    0,    0,    0,    0,    0,    0,    0,    '<',  0,    0    },
-      /*    [   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    '=',  0,    0,    0,    0,    0     },
-      /*    ]   */ {'=',  0,    0,    0,    '<',  '>',  '>',  0,    0,    0,    0,    0,    '>',  '>',  '>',  0   },
-      /*    M   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '=',  0   },
+	        /*            S     E     T     :     (     )     ,     +     *     -     I     C     $     [     ]     */
+      /*    S   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    '>',  '>',  '>',  '=',  '=',  '>'   },
+      /*    E   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    '=',    0,    0,    0,    0,    '='   },
+      /*    T   */ {0,    0,    0,    0,    0,    '=',  '=',  0,    0,    0,    0,    0,    0,    0,    0     },
+      /*    :   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  0,  '<',  '<',  0,    '>',  0     },
+      /*    (   */ {0,    0,    '=',  0,    '<',  0,    0,    '<',  '<',  0,  '<',  '<',  0,    '<',    0     },
+      /*    )   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    '>',    0,    0,    0,    0,    '>'   },
+      /*    ,   */ {0,    '=',  0,    0,    0,    0,    0,    '<',  '<',  0,  '<',  '<',  0,    '<',  0     },
+      /*    +   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0     },
+      /*    *   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0     },
+      /*    -   */ {0,    0,    0,    0,    '>',  '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>'   },
+      /*    I   */ {0,    0,    0,    '=',  0,    '>',  '>',  0,    0,    '>',  0,    0,    0,    0,    '>'   },
+      /*    C   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    '>',  0,    0,    0,    0,    '>'   },
+      /*    $   */ {0,    0,    0,    0,    '<',  0,    0,    0,    0,    0,    0,    0,    0,    '<',  0     },
+      /*    [   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    '=',  0,    0,    0,    0     },
+      /*    ]   */ {'=',  0,    0,    0,    '<',  '>',   0,   0,    0,    '>',   0,    0,   '>',  '>',  '>'   },
       
   };
   // clang-format on
@@ -416,11 +414,11 @@ enum Parser::ParserState Parser::Reduse() {
   Symbol new_symbol;
   enum ParserState result = OK_PRS;
   string rule = "";
-  Symbol bufferI, bufferC, bufferE, bufferT, bufferS,bufferM;
+  Symbol bufferI, bufferC, bufferE, bufferT, bufferS;
 
   while (symbol_stack.top().relatione == '=') {
-    if(rule == ",M" && symbol_stack.top().type=='T') break;
-    // if(rule == "-" && symbol_stack.top().type=='E') break;
+    if(rule == ",E" && symbol_stack.top().type=='T') break;
+    if(rule == "-" && symbol_stack.top().type=='E') break;
 
     rule = symbol_stack.top().type + rule;
     if (symbol_stack.top().type == 'I') bufferI = symbol_stack.top();
@@ -428,8 +426,6 @@ enum Parser::ParserState Parser::Reduse() {
     if (symbol_stack.top().type == 'E') bufferE = symbol_stack.top();
     if (symbol_stack.top().type == 'T') bufferT = symbol_stack.top();
     if (symbol_stack.top().type == 'S') bufferS = symbol_stack.top();
-    if (symbol_stack.top().type == 'M') bufferM = symbol_stack.top();
-
 
     symbol_stack.pop();
   }
@@ -439,8 +435,6 @@ enum Parser::ParserState Parser::Reduse() {
   if (symbol_stack.top().type == 'E') bufferE = symbol_stack.top();
   if (symbol_stack.top().type == 'T') bufferT = symbol_stack.top();
   if (symbol_stack.top().type == 'S') bufferS = symbol_stack.top();
-  if (symbol_stack.top().type == 'M') bufferM = symbol_stack.top();
-
 
 
   symbol_stack.pop();
@@ -455,15 +449,17 @@ enum Parser::ParserState Parser::Reduse() {
         triad_list.pop_back();
         SetError("Undefinded variable: '" +bufferI.value + "'");
       }
+
+
+
     } else  if(rule =="C"){
       new_symbol.value = bufferC.value;
       new_symbol.triad_number = bufferC.triad_number;
-      
     }
     else {
       new_symbol.triad_number = bufferS.triad_number;
     }
-  } else if (rule == "S[I:M]" || rule == "[I:M]") {
+  } else if (rule == "S[I:E]" || rule == "[I:E]") {
     new_symbol.type = 'S';
     new_symbol.triad_number = triads++;
 
@@ -472,38 +468,32 @@ enum Parser::ParserState Parser::Reduse() {
     
     triad_list.push_back(Triad('=',
                                string("^") + to_string(bufferI.triad_number),
-                               string("^") + to_string(bufferM.triad_number)));
-  } else if (rule == "-E") {
-    new_symbol.type = 'M';
+                               string("^") + to_string(bufferE.triad_number)));
+  } else if (rule == "E-") {
+    new_symbol.type = 'E';
     new_symbol.triad_number = triads++;
     triad_list.push_back(
         Triad('-', string("^") + to_string(bufferE.triad_number), "@"));
-
-  } else if(rule == "E"){
-    new_symbol.type = 'M';
-    new_symbol.triad_number = bufferE.triad_number;
-
-  }
+  } 
   else if (rule == "+(T)") {
     new_symbol.type = 'E';
     new_symbol.triad_number = bufferT.triad_number;
+    
     action_stack.pop();
-
   } else if (rule == "*(T)") {
     new_symbol.type = 'E';
     new_symbol.triad_number = bufferT.triad_number;
     action_stack.pop();
-
-  } else if (rule == "T,M") {
+  } else if (rule == "T,E") {
     new_symbol.type = 'T';
     new_symbol.triad_number = triads++;
     triad_list.push_back(Triad(action_stack.top().type,
                                string("^") + to_string(bufferT.triad_number),
-                               string("^") + to_string(bufferM.triad_number)));
+                               string("^") + to_string(bufferE.triad_number)));
 
-  } else if (rule == "M") {
+  } else if (rule == "E") {
     new_symbol.type = 'T';
-    new_symbol.triad_number = bufferM.triad_number;
+    new_symbol.triad_number = bufferE.triad_number;
   } else {
     SetError("Unknown rule", rule);
   }
