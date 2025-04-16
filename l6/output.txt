@@ -1,1 +1,1 @@
-Unexpected nonterminal after [ in line: 2, pos: 0 in: type: ]
+Unexpected nonterminal after : in line: 1, pos: 13 in: type: ]

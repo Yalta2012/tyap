@@ -355,18 +355,18 @@ char Parser::GetRelation(Symbol a, Symbol b) {
 	  /*              S     E     T     :     (     )     ,     +     *     -     I     C     $     [     ]     M     */
       /*    S   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    '>',  '>',  '=',  '=',  '>',  0   },
       /*    E   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>',  0   },
-      /*    T   */ {0,    0,    0,    0,    0,    '=',  '=',  0,    0,    0,    0,    0,    0,    0,    0,    0     },
-      /*    :   */ {0,    0,    0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '>',  0,    '='     },
-      /*    (   */ {0,    '<',  '=',  0,    0,    0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',  0 ,   '<'    },
+      /*    T   */ {0,    0,    '<',  0,    0,    '=',  '=',  0,    0,    0,    0,    0,    0,    0,    0,    0   },
+      /*    :   */ {0,    0,    0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',  0,    '=' },
+      /*    (   */ {0,    '<',  '=',  0,    0,    0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',  0 ,   '<' },
       /*    )   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>',  0   },
-      /*    ,   */ {0,    '<',  0,    0,    0,    0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',  0,    '='     },
-      /*    +   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0     },
-      /*    *   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0     },
-      /*    -   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',   0,    0     },
+      /*    ,   */ {0,    '<',  0,    0,    0,    0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',  0,    '=' },
+      /*    +   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0   },
+      /*    *   */ {0,    0,    0,    0,    '=',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0   },
+      /*    -   */ {0,    '=',  0,    0,    '<',  0,    0,    '<',  '<',  '<',  '<',  '<',  0,    '<',   0,    '='},
       /*    I   */ {0,    0,    0,    '=',  0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>',  0   },
       /*    C   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '>',  0   },
-      /*    $   */ {0,    0,    0,    0,    '<',  0,    0,    0,    0,    0,    0,    0,    0,    '<',  0,    0    },
-      /*    [   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    '=',  0,    0,    0,    0,    0     },
+      /*    $   */ {0,    0,    0,    0,    '<',  0,    0,    0,    0,    0,    0,    0,    0,    '<',  0,    0   },
+      /*    [   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    '=',  0,    0,    0,    0,    0   },
       /*    ]   */ {'=',  0,    0,    0,    '<',  '>',  '>',  0,    0,    0,    0,    0,    '>',  '>',  '>',  0   },
       /*    M   */ {0,    0,    0,    0,    0,    '>',  '>',  0,    0,    0,    0,    0,    0,    0,    '=',  0   },
       
@@ -398,7 +398,6 @@ Symbol Parser::GetSymbol() {
     result.triad_number = triads++;
     triad_list.push_back(Triad('I', result.value, string("@")));
 
-
   } else if (cur_c == EOF_SIGNAL) {
     result.type = '$';
     result.value = "";
@@ -416,12 +415,11 @@ enum Parser::ParserState Parser::Reduse() {
   Symbol new_symbol;
   enum ParserState result = OK_PRS;
   string rule = "";
-  Symbol bufferI, bufferC, bufferE, bufferT, bufferS,bufferM;
+  Symbol bufferI, bufferC, bufferE, bufferT, bufferS, bufferM;
 
   while (symbol_stack.top().relatione == '=') {
-    if(rule == ",M" && symbol_stack.top().type=='T') break;
+    if (rule == ",M" && symbol_stack.top().type == 'T') break;
     // if(rule == "-" && symbol_stack.top().type=='E') break;
-
     rule = symbol_stack.top().type + rule;
     if (symbol_stack.top().type == 'I') bufferI = symbol_stack.top();
     if (symbol_stack.top().type == 'C') bufferC = symbol_stack.top();
@@ -429,7 +427,6 @@ enum Parser::ParserState Parser::Reduse() {
     if (symbol_stack.top().type == 'T') bufferT = symbol_stack.top();
     if (symbol_stack.top().type == 'S') bufferS = symbol_stack.top();
     if (symbol_stack.top().type == 'M') bufferM = symbol_stack.top();
-
 
     symbol_stack.pop();
   }
@@ -441,50 +438,47 @@ enum Parser::ParserState Parser::Reduse() {
   if (symbol_stack.top().type == 'S') bufferS = symbol_stack.top();
   if (symbol_stack.top().type == 'M') bufferM = symbol_stack.top();
 
-
-
   symbol_stack.pop();
 
-  if (rule == "I" || rule == "C" || rule =="S") {
+  if (rule == "I" || rule == "C" || rule == "S") {
     new_symbol.type = 'E';
     if (rule == "I") {
       if (symtable.contains(bufferI.value)) {
-      new_symbol.value = bufferI.value;
-      new_symbol.triad_number = bufferI.triad_number;
+        new_symbol.value = bufferI.value;
+        new_symbol.triad_number = bufferI.triad_number;
       } else {
         triad_list.pop_back();
-        SetError("Undefinded variable: '" +bufferI.value + "'");
+        SetError("Undefinded variable: '" + bufferI.value + "'");
       }
-    } else  if(rule =="C"){
+    } else if (rule == "C") {
       new_symbol.value = bufferC.value;
       new_symbol.triad_number = bufferC.triad_number;
-      
-    }
-    else {
+
+    } else {
       new_symbol.triad_number = bufferS.triad_number;
     }
   } else if (rule == "S[I:M]" || rule == "[I:M]") {
     new_symbol.type = 'S';
     new_symbol.triad_number = triads++;
 
-    if (!symtable.contains(bufferI.value)) symtable_keys.push_back(bufferI.value);
+    if (!symtable.contains(bufferI.value))
+      symtable_keys.push_back(bufferI.value);
     symtable[bufferI.value] = 0;
-    
+
     triad_list.push_back(Triad('=',
                                string("^") + to_string(bufferI.triad_number),
                                string("^") + to_string(bufferM.triad_number)));
   } else if (rule == "-E") {
-    new_symbol.type = 'M';
+    new_symbol.type = 'E';
     new_symbol.triad_number = triads++;
     triad_list.push_back(
         Triad('-', string("^") + to_string(bufferE.triad_number), "@"));
 
-  } else if(rule == "E"){
+  } else if (rule == "E") {
     new_symbol.type = 'M';
     new_symbol.triad_number = bufferE.triad_number;
 
-  }
-  else if (rule == "+(T)") {
+  } else if (rule == "+(T)") {
     new_symbol.type = 'E';
     new_symbol.triad_number = bufferT.triad_number;
     action_stack.pop();
@@ -507,10 +501,10 @@ enum Parser::ParserState Parser::Reduse() {
   } else {
     SetError("Unknown rule", rule);
   }
-  if (cur_c!= ERROR_SIGNAL){
-
+  if (cur_c != ERROR_SIGNAL) {
     new_symbol.relatione = GetRelation(symbol_stack.top(), new_symbol);
-    cout<<"Reduse: <"<< rule<< "> to <" << new_symbol.type<<"> triad: " << new_symbol.triad_number  <<endl;
+    cout << "Reduse: <" << rule << "> to <" << new_symbol.type
+         << "> triad: " << new_symbol.triad_number << endl;
     symbol_stack.push(new_symbol);
   }
   return result;
@@ -528,15 +522,18 @@ void Parser::Parse() {
 
   while (parser_state == OK_PRS) {
     new_simbol.relatione = GetRelation(symbol_stack.top(), new_simbol);
+
     if (new_simbol.type == '$' && symbol_stack.top().type == 'S') {
       parser_state = STOP_PRS;
-      cout<<"Done"<<endl;
+      cout << "Done" << endl;
+
     } else if (new_simbol.relatione == '<' || new_simbol.relatione == '=' ||
                new_simbol.relatione == '%') {
       symbol_stack.push(new_simbol);
-      cout<<"Shift: <" << symbol_stack.top().type<<">";
-      if (symbol_stack.top().type == 'C' || symbol_stack.top().type =='I')  cout<<" triad: " << symbol_stack.top().triad_number;
-      cout<<endl;
+      cout << "Shift: <" << symbol_stack.top().type << ">";
+      if (symbol_stack.top().type == 'C' || symbol_stack.top().type == 'I')
+        cout << " triad: " << symbol_stack.top().triad_number;
+      cout << endl;
       if (new_simbol.type == '+' || new_simbol.type == '*')
         action_stack.push(new_simbol);
 
@@ -554,13 +551,15 @@ void Parser::Parse() {
           new_simbol);
     } else if (new_simbol.relatione == '>') {
       parser_state = Reduse();
+    } else {
+      SetError(string("Something wrong with table! Relation: ") +
+               string{new_simbol.relatione});
     }
   }
 
   if (cur_c == ERROR_SIGNAL) {
     ErrorOutput();
-  }
-  else{
+  } else {
     TriadListPrint(ofS);
     // TriadListPrint();
   }
@@ -589,7 +588,6 @@ int main(int argc, char* argw[]) {
 
   parser.Parse();
   // parser.Optimize();
-  
 
   return 0;
 }
